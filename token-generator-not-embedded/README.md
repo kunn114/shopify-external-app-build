@@ -23,7 +23,7 @@ Redirect URL 在 **App → Versions** 中配置（需 **Release** 后生效）�
 | 配置项 | 说明 |
 |--------|------|
 | **Embed app in Shopify admin** | **关闭**（`embedded: false`） |
-| **App URL** | 本页 HTTPS 地址，例如 `https://kunn114.github.io/shopify-external-app/token-generator-not-embedded` |
+| **App URL** | 本页 HTTPS 地址，例如 `https://kunn114.github.io/shopify-external-app-build/token-generator-not-embedded` |
 | **Redirect URLs** | 与 App URL **完全相同** |
 | **Admin API scopes** | 生成 Token 时填写的 Scopes 须与此处一致 |
 | **Use legacy install flow** | 通常保持 `false` |
@@ -38,13 +38,13 @@ Redirect URL 在 **App → Versions** 中配置（需 **Release** 后生效）�
 正确示例：
 
 ```
-https://kunn114.github.io/shopify-external-app/token-generator-not-embedded
+https://kunn114.github.io/shopify-external-app-build/token-generator-not-embedded
 ```
 
 错误示例（会导致 `redirect_uri is not whitelisted`）：
 
 ```
-https://kunn114.github.io/shopify-external-app/token-generator-not-embedded/
+https://kunn114.github.io/shopify-external-app-build/token-generator-not-embedded/
 ```
 
 ## Token 类型
