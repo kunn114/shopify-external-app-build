@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shopify Admin API Token 生成器</title>
+    <script src="https://cdn.shopify.com/shopifycloud/polaris.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+    />
+    <script type="module" crossorigin src="../assets/tokenGenerator-Je7BgVYb.js"></script>
+    <link rel="stylesheet" crossorigin href="../assets/tokenGenerator-GJgg9K3y.css">
+  </head>
+  <body>
+    <s-page heading="Shopify Admin API Token 生成器" inlineSize="small">
+      <s-stack gap="large">
+        <s-stack direction="inline" gap="small-200" alignItems="center">
+          <s-badge tone="info">Embedded = false</s-badge>
+          <s-text color="subdued">从 Admin App 菜单进入会在新标签页打开</s-text>
+        </s-stack>
+
+        <s-paragraph color="subdued">
+          通过 OAuth 授权码流程获取 Admin API Access Token。授权完成后在页面复制 CURL 命令，于本地终端执行换取 Token。
+        </s-paragraph>
+
+        <div class="code-panel code-panel--light">
+          <div class="code-panel__header">
+            <span class="code-panel__label">Redirect URL</span>
+            <button type="button" class="btn-code-copy" id="btn-copy-redirect" aria-label="复制 Redirect URL">
+              复制
+            </button>
+          </div>
+          <pre class="code-panel__body"><code id="redirect-uri-display" class="code-block">—</code></pre>
+        </div>
+
+        <s-section heading="OAuth 配置">
+          <s-form id="oauth-form">
+            <s-stack gap="base">
+              <s-text-field
+                id="shop"
+                name="shop"
+                label="店铺域名"
+                placeholder="your-store.myshopify.com"
+                details="从 Admin App 菜单打开时，Shopify 会在新标签页打开本页并自动带入 shop 参数；地址栏应为 GitHub Pages 域名，而非 admin.shopify.com。"
+                required
+              ></s-text-field>
+
+              <s-text-field
+                id="client-id"
+                name="client_id"
+                label="Client ID"
+                placeholder="Shopify App Client ID (API Key)"
+                details="Partner Dashboard → App → API credentials 中的 Client ID。"
+                required
+              ></s-text-field>
+
+              <s-password-field
+                id="client-secret"
+                name="client_secret"
+                label="Secret"
+                placeholder="Shopify App Client Secret"
+                details="Secret 仅用于生成终端 CURL 命令（不会发送到本仓库服务器）。请在本地终端执行命令换取 Token。"
+                required
+              ></s-password-field>
+
+              <s-text-field
+                id="scopes"
+                name="scopes"
+                label="Scopes"
+                placeholder="read_products,write_products,read_orders"
+                details="与 Partner Dashboard 中 App 配置的 Admin API scopes 完全一致，逗号分隔。"
+                required
+              ></s-text-field>
+
+              <s-banner id="alert" tone="info" hidden></s-banner>
+
+              <s-button-group gap="base">
+                <s-button slot="primary-action" id="btn-offline" variant="primary" type="button">
+                  生成永久 Token
+                </s-button>
+                <s-button slot="secondary-actions" id="btn-online" variant="secondary" type="button">
+                  生成非永久 Token
+                </s-button>
+              </s-button-group>
+            </s-stack>
+          </s-form>
+        </s-section>
+
+        <div id="curl-panel" hidden>
+          <s-section heading="在终端换取 Access Token">
+            <s-stack gap="base">
+              <s-stack direction="inline" gap="small-200" alignItems="center">
+                <s-heading id="curl-title">Access Token</s-heading>
+                <s-badge id="curl-badge" tone="success">Offline</s-badge>
+              </s-stack>
+
+              <s-paragraph color="subdued">
+                纯静态页面无法跨域调用 Shopify Token 接口（CORS 限制）。请复制下方命令到本地终端执行，或在
+                Apifox 平台的更多功能中导入 cURL 并发送请求；响应 JSON 中的 access_token 即为 Token。
+              </s-paragraph>
+
+              <s-banner tone="warning" heading="授权码有时效，请立即执行">
+                授权码 code 仅可使用一次，且通常在数分钟内过期。授权成功后请立即复制命令到终端执行，或在
+                Apifox 平台的更多功能中导入 cURL 并发送请求。勿刷新或关闭本页。
+              </s-banner>
+
+              <s-stack direction="inline" gap="small-200" alignItems="center">
+                <s-text id="platform-active-label" type="strong">当前：zsh / bash</s-text>
+              </s-stack>
+
+              <s-stack direction="inline" gap="small-200" id="platform-tabs">
+                <s-button
+                  id="tab-windows"
+                  variant="secondary"
+                  type="button"
+                  data-platform="windows"
+                  aria-pressed="false"
+                >
+                  Windows
+                </s-button>
+                <s-button
+                  id="tab-macos"
+                  variant="secondary"
+                  type="button"
+                  data-platform="macos"
+                  aria-pressed="false"
+                >
+                  macOS
+                </s-button>
+                <s-button
+                  id="tab-linux"
+                  variant="secondary"
+                  type="button"
+                  data-platform="linux"
+                  aria-pressed="false"
+                >
+                  Linux
+                </s-button>
+              </s-stack>
+
+              <div class="code-panel code-panel--dark curl-block">
+                <div class="code-panel__header">
+                  <div class="code-panel__meta">
+                    <span class="code-panel__dots" aria-hidden="true">
+                      <span></span><span></span><span></span>
+                    </span>
+                    <span class="code-panel__label" id="curl-platform-label">Terminal</span>
+                  </div>
+                  <button type="button" class="btn-code-copy btn-code-copy--dark" id="btn-copy-curl">
+                    复制命令
+                  </button>
+                </div>
+                <pre class="code-panel__body"><code id="curl-command" class="code-block code-block--curl hljs"></code></pre>
+              </div>
+
+              <figure class="apifox-guide">
+                <img
+                  src="../assets/apifox-import-curl-Byf26xpj.png"
+                  alt="Apifox 更多功能中导入 cURL 并发送请求"
+                  loading="lazy"
+                />
+                <figcaption>Apifox：更多功能 → 导入 cURL → 发送请求</figcaption>
+              </figure>
+
+              <s-banner tone="warning" heading="获得 Token 后请清除会话存储">
+                获得 Token 后，建议点击下方的清除会话存储按钮，确保密钥的安全性。
+              </s-banner>
+
+              <s-button id="btn-clear-session" variant="secondary" tone="critical" type="button">
+                清除会话存储
+              </s-button>
+
+              <s-banner id="clear-session-notice" tone="success" heading="会话存储已清除" hidden>
+                本地 sessionStorage 中的表单与 OAuth 临时数据已全部清除。
+              </s-banner>
+            </s-stack>
+          </s-section>
+        </div>
+      </s-stack>
+    </s-page>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/powershell.min.js"></script>
+  </body>
+</html>
