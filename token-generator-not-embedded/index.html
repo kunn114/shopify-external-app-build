@@ -9,7 +9,7 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
     />
-    <script type="module" crossorigin src="../assets/tokenGenerator-C7Ls3gbA.js"></script>
+    <script type="module" crossorigin src="../assets/tokenGenerator-rzbydQKa.js"></script>
     <link rel="stylesheet" crossorigin href="../assets/tokenGenerator-GJgg9K3y.css">
   </head>
   <body>
@@ -56,9 +56,6 @@
               <s-paragraph color="subdued">
                 2. 填写店铺域名、Client ID、Secret、Scopes（须与 App 配置的 Admin API scopes 一致）。
               </s-paragraph>
-              <s-paragraph color="subdued">
-                3. 点击「生成永久 Token」或「生成非永久 Token」，在 Shopify 授权页同意授权。
-              </s-paragraph>
               <s-form id="oauth-form">
                 <s-stack gap="base">
                   <s-text-field
@@ -96,6 +93,10 @@
                     details="与 Partner Dashboard 中 App 配置的 Admin API scopes 完全一致，逗号分隔。"
                     required
                   ></s-text-field>
+
+                  <s-paragraph color="subdued">
+                    3. 点击「生成永久 Token」或「生成非永久 Token」，在 Shopify 授权页同意授权。
+                  </s-paragraph>
 
                   <s-banner id="alert" tone="info" hidden></s-banner>
 
