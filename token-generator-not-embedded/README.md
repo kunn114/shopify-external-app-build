@@ -58,7 +58,7 @@ https://kunn114.github.io/shopify-external-app-build/token-generator-not-embedde
 技术实现：
 
 - **永久 Offline**：授权 URL 不传 `grant_options[]`；换 Token 的 CURL 不含 `expiring`。
-- **非永久 Offline**：授权 URL 同样不传 `grant_options[]`；换 Token 的 CURL 附加 `"expiring":"1"`。
+- **非永久 Offline**：授权 URL 同样不传 `grant_options[]`；换 Token 的 CURL 附加 `expiring=1`。
 - **非永久 Online**：授权 URL 增加 `grant_options[]=per-user`；换 Token 的 CURL 不含 `expiring`。
 
 ## 使用步骤
@@ -108,20 +108,20 @@ https://kunn114.github.io/shopify-external-app-build/token-generator-not-embedde
 授权成功后，页面会生成包含真实参数的命令，形态如下：
 
 ```bash
-curl -s -X POST "https://your-store.myshopify.com/admin/oauth/access_token" \
-  -H "Content-Type: application/json" \
-  -d "{\"client_id\":\"YOUR_CLIENT_ID\",\"client_secret\":\"YOUR_SECRET\",\"code\":\"AUTHORIZATION_CODE\"}"
+curl -sS -X POST "https://your-store.myshopify.com/admin/oauth/access_token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=YOUR_CLIENT_ID&client_secret=YOUR_SECRET&code=AUTHORIZATION_CODE"
 ```
 
 ### Windows（PowerShell）
 
-页面 **Windows** 标签使用 `curl.exe` 与 PowerShell 行续符 `` ` ``，例如：
+页面 **Windows** 标签使用 **单行** `curl.exe` 命令；Body 为 `application/x-www-form-urlencoded`，且用**单引号**包裹（PowerShell 双引号内 `&` 会被当成命令分隔符）。例如：
 
 ```powershell
-curl.exe -s -X POST "https://your-store.myshopify.com/admin/oauth/access_token" `
-  -H "Content-Type: application/json" `
-  -d "{\"client_id\":\"...\",\"client_secret\":\"...\",\"code\":\"...\"}"
+curl.exe -sS -X POST "https://your-store.myshopify.com/admin/oauth/access_token" -H "Content-Type: application/x-www-form-urlencoded" -d 'client_id=...&client_secret=...&code=...'
 ```
+
+非永久 Offline Token 的 `-d` 末尾追加 `&expiring=1`。
 
 ### 成功响应示例
 
@@ -217,5 +217,5 @@ Embedded 可能仍为开启，或浏览器缓存了旧版本。请确认 Version
 **页面在 Admin iframe 内**  
 与 Embedded = false 不符。关闭 Partner Dashboard 中的 Embed，卸载后重新安装 App。
 
-**CURL 在 Windows 报错**  
-请使用页面 **Windows** 标签下的命令（`curl.exe` + PowerShell 续行符）。若系统无 curl，可安装 [Windows curl](https://curl.se/windows/) 或使用 Git Bash 下的 **macOS / Linux** 命令格式。
+**CURL 在 Windows 无输出**  
+Shopify 在请求格式错误时可能返回 **HTTP 400 且空 body**，配合 `-s` 看起来像没有任何返回。Windows 上 `-d` 须用**单引号**包裹 form body（双引号内 `&` 会被 PowerShell 拆成多条命令，curl 报 `Port number was not a decimal number`）。请使用页面 **Windows** 标签下的命令。
