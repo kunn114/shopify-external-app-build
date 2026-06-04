@@ -51,10 +51,15 @@ https://kunn114.github.io/shopify-external-app-build/token-generator-not-embedde
 
 | 按钮 | Shopify 类型 | 说明 |
 |------|--------------|------|
-| **生成永久 Token** | Offline | 店铺级 Token，在 App 未卸载、Secret 未撤销前长期有效，适合后端定时任务、Webhook 等无用户在线场景。 |
-| **生成非永久 Token** | Online | 绑定当前授权员工，随会话失效（通常约 24 小时或登出后失效），适合需尊重员工权限的交互场景。 |
+| **生成永久 Offline Token** | Offline（非过期） | 店铺级 Token，在 App 未卸载、Secret 未撤销前长期有效，适合后端定时任务、Webhook 等无用户在线场景。 |
+| **生成非永久 Offline Token** | Offline（过期 + 可刷新） | 店铺级 Token，access_token 约 60 分钟过期，响应含 `refresh_token` 可续期；换取时在 CURL 中附加 `expiring=1`。 |
+| **生成非永久 Online Token** | Online | 绑定当前授权员工，随会话失效（通常约 24 小时或登出后失效），适合需尊重员工权限的交互场景。 |
 
-技术实现上，Online Token 在授权 URL 中增加 `grant_options[]=per-user`；Offline 则不传该参数。
+技术实现：
+
+- **永久 Offline**：授权 URL 不传 `grant_options[]`；换 Token 的 CURL 不含 `expiring`。
+- **非永久 Offline**：授权 URL 同样不传 `grant_options[]`；换 Token 的 CURL 附加 `"expiring":"1"`。
+- **非永久 Online**：授权 URL 增加 `grant_options[]=per-user`；换 Token 的 CURL 不含 `expiring`。
 
 ## 使用步骤
 
@@ -67,7 +72,7 @@ https://kunn114.github.io/shopify-external-app-build/token-generator-not-embedde
    - **Client ID**：App 的 API Key（Partner Dashboard → API credentials）。
    - **Secret**：App 的 API Secret Key。
    - **Scopes**：与 App 配置的 Admin API scopes 一致，例如 `read_products,read_discounts`。
-6. 点击 **生成永久 Token** 或 **生成非永久 Token**，在 Shopify 授权页同意。
+6. 点击 **生成永久 Offline Token**、**生成非永久 Offline Token** 或 **生成非永久 Online Token**，在 Shopify 授权页同意。
 7. 回到本页，在 **CURL 命令** 区域选择 **Windows / macOS / Linux**（默认按浏览器环境自动选中），点击 **复制命令**。
 8. 在本地终端粘贴并执行；响应 JSON 中的 `access_token` 即为 Token。
 
@@ -127,7 +132,7 @@ curl.exe -s -X POST "https://your-store.myshopify.com/admin/oauth/access_token" 
 }
 ```
 
-Online Token 响应可能 additionally 包含 `expires_in`、`associated_user` 等字段。
+非永久 Online Token 响应 additionally 包含 `expires_in`、`associated_user` 等字段；非永久 Offline Token 响应 additionally 包含 `expires_in`、`refresh_token`、`refresh_token_expires_in`。
 
 > **授权码 `code` 只能使用一次**，且有时效。复制 CURL 后请尽快在终端执行；若失败需重新点击生成按钮走一遍授权。
 
