@@ -8,7 +8,7 @@
 
 ## 适用场景
 
-- 内部工具：为指定店铺生成 Offline / Online Token，配置到后端环境变量
+- 内部工具：为指定店铺生成永久 / 非永久 Offline Token 或非永久 Online Token，配置到后端环境变量
 - 开发调试：Partner Dashboard 中 **关闭 Embed**，用 GitHub Pages 等静态托管快速授权
 - 无服务端：接受在本地终端执行 CURL 完成最后一步换 Token
 
@@ -61,6 +61,16 @@ https://kunn114.github.io/shopify-external-app-build/token-generator-not-embedde
 - **非永久 Offline**：授权 URL 同样不传 `grant_options[]`；换 Token 的 CURL 附加 `expiring=1`。
 - **非永久 Online**：授权 URL 增加 `grant_options[]=per-user`；换 Token 的 CURL 不含 `expiring`。
 
+### 如何选择
+
+| 场景 | 推荐按钮 |
+|------|----------|
+| 后端定时任务、Webhook、无用户在线的后台服务 | **生成永久 Offline Token** |
+| 需要店铺级 Token，但希望 access_token 定期过期并可用 refresh_token 续期 | **生成非永久 Offline Token** |
+| 需绑定当前授权员工、尊重其 Admin 权限的交互式操作 | **生成非永久 Online Token** |
+
+> **注意**：「非永久 Offline」与「非永久 Online」完全不同——前者是店铺级 + 可刷新，后者是员工级 + 随会话失效。请勿混用。
+
 ## 使用步骤
 
 1. 将本目录部署到静态站点（见下方 [GitHub Pages 部署](#github-pages-部署)），确保可通过 HTTPS 访问。
@@ -73,7 +83,7 @@ https://kunn114.github.io/shopify-external-app-build/token-generator-not-embedde
    - **Secret**：App 的 API Secret Key。
    - **Scopes**：与 App 配置的 Admin API scopes 一致，例如 `read_products,read_discounts`。
 6. 点击 **生成永久 Offline Token**、**生成非永久 Offline Token** 或 **生成非永久 Online Token**，在 Shopify 授权页同意。
-7. 回到本页，在 **CURL 命令** 区域选择 **Windows / macOS / Linux**（默认按浏览器环境自动选中），点击 **复制命令**。
+7. 回到本页，在 **Access Token** 区域确认 Token 类型标签（如 `Offline · 永久`），选择 **Windows / macOS / Linux**（默认按浏览器环境自动选中），点击 **复制命令**。
 8. 在本地终端粘贴并执行；响应 JSON 中的 `access_token` 即为 Token。
 
 ## OAuth 流程简述
@@ -93,7 +103,7 @@ https://kunn114.github.io/shopify-external-app-build/token-generator-not-embedde
 终端返回 JSON，读取 access_token
 ```
 
-- **state**：防 CSRF，保存在 `sessionStorage`（键名 `tgne_oauth_state`）。
+- **state** / **tokenMode**：防 CSRF 与记录所选 Token 类型，保存在 `sessionStorage`（键名 `tgne_oauth_state`、`tgne_token_mode`）。
 - **HMAC**：使用 Secret 校验回调参数完整性。
 - 表单信息在授权前写入 `sessionStorage`（前缀 `tgne_*`），以便回调后生成 CURL。
 
@@ -125,6 +135,8 @@ curl.exe -sS -X POST "https://your-store.myshopify.com/admin/oauth/access_token"
 
 ### 成功响应示例
 
+**永久 Offline Token**
+
 ```json
 {
   "access_token": "shpat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -132,7 +144,32 @@ curl.exe -sS -X POST "https://your-store.myshopify.com/admin/oauth/access_token"
 }
 ```
 
-非永久 Online Token 响应 additionally 包含 `expires_in`、`associated_user` 等字段；非永久 Offline Token 响应 additionally 包含 `expires_in`、`refresh_token`、`refresh_token_expires_in`。
+**非永久 Offline Token**（另含 `expires_in`、`refresh_token`、`refresh_token_expires_in`）
+
+```json
+{
+  "access_token": "shpat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "scope": "read_discounts,read_products",
+  "expires_in": 3600,
+  "refresh_token": "shprt_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "refresh_token_expires_in": 7776000
+}
+```
+
+**非永久 Online Token**（另含 `expires_in`、`associated_user_scope`、`associated_user`）
+
+```json
+{
+  "access_token": "shpat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "scope": "read_discounts,read_products",
+  "expires_in": 86399,
+  "associated_user_scope": "read_discounts,read_products",
+  "associated_user": {
+    "id": 902541635,
+    "email": "merchant@example.com"
+  }
+}
+```
 
 > **授权码 `code` 只能使用一次**，且有时效。复制 CURL 后请尽快在终端执行；若失败需重新点击生成按钮走一遍授权。
 
@@ -217,5 +254,8 @@ Embedded 可能仍为开启，或浏览器缓存了旧版本。请确认 Version
 **页面在 Admin iframe 内**  
 与 Embedded = false 不符。关闭 Partner Dashboard 中的 Embed，卸载后重新安装 App。
 
-**CURL 在 Windows 无输出**  
+**非永久 Offline 和非永久 Online 有什么区别？**  
+非永久 **Offline** 是店铺级 Token，CURL 含 `expiring=1`，响应含 `refresh_token` 可续期，适合后台服务。非永久 **Online** 绑定当前授权员工，授权 URL 含 `grant_options[]=per-user`，响应含 `associated_user`，适合需尊重员工权限的前端/交互场景。
+
+**CURL 在 Windows 无输出或报 Port number 错误**  
 Shopify 在请求格式错误时可能返回 **HTTP 400 且空 body**，配合 `-s` 看起来像没有任何返回。Windows 上 `-d` 须用**单引号**包裹 form body（双引号内 `&` 会被 PowerShell 拆成多条命令，curl 报 `Port number was not a decimal number`）。请使用页面 **Windows** 标签下的命令。
